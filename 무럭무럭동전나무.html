@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="theme-color" content="#3182F6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    
+    <title>무럭무럭 동전 나무</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <style>
+        :root {
+            --primary-color: #3182F6;
+            --bg-color: #F2F4F6;
+            --text-color: #191F28;
+            --secondary-text: #8B95A1;
+            --white: #FFFFFF;
+            --accent-color: #FFC64E;
+            --success-color: #2EB596;
+            
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            overscroll-behavior-y: none;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--white);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            height: 100%;
+        }
+
+        /* 1. 상단 정보창 */
+        .header {
+            padding: 20px;
+            padding-top: max(20px, var(--safe-top));
+            text-align: center;
+            z-index: 10;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+            backdrop-filter: blur(5px);
+        }
+
+        .coin-display {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .coin-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cps-display {
+            font-size: 14px;
+            color: var(--secondary-text);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* 2. 메인 게임 영역 */
+        .main-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+            -webkit-touch-callout: none;
+        }
+
+        .tree-container {
+            position: relative;
+            transition: transform 0.1s;
+            margin-bottom: 20px;
+        }
+
+        .tree-container:active {
+            transform: scale(0.95);
+        }
+
+        .tree-emoji {
+            font-size: 120px;
+            line-height: 1;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .level-info {
+            text-align: center;
+            width: 80%;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background-color: #E8F3FF;
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #E5E8EB;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* 3. 업그레이드 패널 */
+        .upgrade-panel {
+            background-color: var(--white);
+            border-top: 1px solid #E5E8EB;
+            padding: 20px;
+            padding-bottom: max(20px, var(--safe-bottom)); 
+            max-height: 50vh; /* 패널 높이 약간 증가 */
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background-color: var(--white);
+            z-index: 5;
+            padding-bottom: 10px;
+        }
+
+        .upgrade-item {
+            display: flex;
+            align-items: center;
+            background-color: #F9FAFB;
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .upgrade-item:active {
+            background-color: #F2F4F6;
+        }
+
+        .item-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            background-color: var(--white);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 15px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .item-desc {
+            font-size: 12px;
+            color: var(--secondary-text);
+            margin-top: 3px;
+            display: block;
+        }
+
+        .buy-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-width: 85px;
+            text-align: center;
+        }
+
+        .buy-btn:disabled {
+            background-color: #E5E8EB;
+            color: #B0B8C1;
+            cursor: not-allowed;
+        }
+
+        /* 4. 모달 & 효과 */
+        .click-effect {
+            position: absolute;
+            font-weight: bold;
+            font-size: 20px;
+            color: var(--accent-color);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .click-effect.critical {
+            color: #FF5F5F;
+            font-size: 32px;
+            font-weight: 900;
+            z-index: 101;
+            animation: floatUpCrit 1s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.2); opacity: 0; }
+        }
+
+        @keyframes floatUpCrit {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            50% { transform: translateY(-30px) scale(1.5); }
+            100% { transform: translateY(-80px) scale(1); opacity: 0; }
+        }
+
+        .evolution-anim {
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal-body {
+            font-size: 15px;
+            color: #4E5968;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- 헤더 -->
+        <header class="header">
+            <div class="coin-display">
+                <div class="coin-icon">₩</div>
+                <span id="score">0</span>
+            </div>
+            <div class="cps-display">초당 수익: <span id="cps">0</span>원</div>
+        </header>
+
+        <!-- 메인 게임 영역 -->
+        <section class="main-stage" id="click-area">
+            <div class="tree-container">
+                <div id="tree-emoji" class="tree-emoji">🌱</div>
+            </div>
+            
+            <div class="level-info">
+                <div id="level-badge" class="level-badge">Lv.1 작은 씨앗</div>
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <span id="progress-text" class="progress-text">다음 진화까지: 100원</span>
+            </div>
+        </section>
+
+        <!-- 업그레이드 상점 -->
+        <footer class="upgrade-panel">
+            <div class="panel-title">성장 도구 (상점)</div>
+            
+            <!-- 1. 기본 클릭 강화 -->
+            <div class="upgrade-item" onclick="game.buyUpgrade('click')">
+                <div class="item-icon">🧪</div>
+                <div class="item-info">
+                    <span class="item-name">고농축 영양제</span>
+                    <span class="item-desc">터치 수익 +1 (기본)</span>
+                </div>
+                <button id="btn-upgrade-click" class="buy-btn">10원</button>
+            </div>
+
+            <!-- 2. 자동 수익 강화 -->
+            <div class="upgrade-item" onclick="game.buyUpgrade('auto')">
+                <div class="item-icon">🚿</div>
+                <div class="item-info">
+                    <span class="item-name">자동 물뿌리개</span>
+                    <span class="item-desc">초당 +1원 (기본)</span>
+                </div>
+                <button id="btn-upgrade-auto" class="buy-btn">50원</button>
+            </div>
+
+            <!-- 3. 크리티컬 강화 -->
+            <div class="upgrade-item" onclick="game.buyUpgrade('crit')">
+                <div class="item-icon">☀️</div>
+                <div class="item-info">
+                    <span class="item-name">따스한 햇살</span>
+                    <span class="item-desc">대박(x3) 확률 +5%</span>
+                </div>
+                <button id="btn-upgrade-crit" class="buy-btn">200원</button>
+            </div>
+
+            <!-- 4. [New] 클릭 승수 강화 -->
+            <div class="upgrade-item" onclick="game.buyUpgrade('mult_click')">
+                <div class="item-icon">🌱</div>
+                <div class="item-info">
+                    <span class="item-name">슈퍼 비료</span>
+                    <span class="item-desc" style="color:#E67E22; font-weight:600;">터치 효율 +10% 증폭</span>
+                </div>
+                <button id="btn-upgrade-mult-click" class="buy-btn">1,000원</button>
+            </div>
+
+            <!-- 5. [New] 자동 승수 강화 -->
+            <div class="upgrade-item" onclick="game.buyUpgrade('mult_auto')">
+                <div class="item-icon">🧚‍♀️</div>
+                <div class="item-info">
+                    <span class="item-name">요정의 축복</span>
+                    <span class="item-desc" style="color:#9B59B6; font-weight:600;">초당 수익 +10% 증폭</span>
+                </div>
+                <button id="btn-upgrade-mult-auto" class="buy-btn">2,500원</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 오프라인 모달 -->
+    <div id="offline-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">웰컴 백! 👋</div>
+            <div class="modal-body">
+                안 계신 동안 요정들이<br>
+                열심히 일해서 돈을 벌었어요.<br><br>
+                <strong style="font-size: 24px; color: var(--primary-color);">+<span id="offline-earn">0</span>원</strong>
+            </div>
+            <button class="modal-btn" onclick="game.closeModal()">수확하기</button>
+        </div>
+    </div>
+
+    <script>
+        const game = {
+            state: {
+                coins: 0,
+                // 기본 스탯 (Flat)
+                clickPower: 1,
+                autoIncome: 0,
+                critLevel: 0,
+
+                // 승수 스탯 (Multiplier)
+                clickMultiplier: 1, 
+                autoMultiplier: 1,
+
+                // 비용
+                clickCost: 10,
+                autoCost: 50,
+                critCost: 200,
+                multClickCost: 1000,
+                multAutoCost: 2500,
+
+                treeLevel: 0,
+                lastSaveTime: Date.now()
+            },
+
+            // 진화 단계 (30단계로 확장)
+            treeStages: [
+                { limit: 0, emoji: "🌱", name: "Lv.1 작은 씨앗" },
+                { limit: 100, emoji: "🌿", name: "Lv.2 파릇한 새싹" },
+                { limit: 1000, emoji: "🎋", name: "Lv.3 무럭무럭 대나무" },
+                { limit: 5000, emoji: "🌳", name: "Lv.4 튼튼한 참나무" },
+                { limit: 20000, emoji: "🌲", name: "Lv.5 울창한 전나무" },
+                { limit: 50000, emoji: "🌴", name: "Lv.6 열대의 야자수" },
+                { limit: 150000, emoji: "🌵", name: "Lv.7 거대 선인장" },
+                { limit: 400000, emoji: "🎄", name: "Lv.8 축복의 트리" },
+                { limit: 1000000, emoji: "🍁", name: "Lv.9 천년 단풍나무" },
+                { limit: 3000000, emoji: "🍄", name: "Lv.10 신비한 버섯숲" },
+                
+                // 중반부: 부의 상징 & 자연재해
+                { limit: 10000000, emoji: "💰", name: "Lv.11 황금 돈나무" },
+                { limit: 30000000, emoji: "💎", name: "Lv.12 수정 보석나무" },
+                { limit: 100000000, emoji: "🌋", name: "Lv.13 마그마 뿌리" },
+                { limit: 500000000, emoji: "☁️", name: "Lv.14 천공의 세계수" },
+                { limit: 1000000000, emoji: "🪐", name: "Lv.15 행성 포식자" },
+                
+                // 후반부: 우주 & 차원
+                { limit: 5000000000, emoji: "☀️", name: "Lv.16 태양의 심장" },
+                { limit: 20000000000, emoji: "🌌", name: "Lv.17 은하수 정원" },
+                { limit: 100000000000, emoji: "🕳️", name: "Lv.18 블랙홀 씨앗" },
+                { limit: 500000000000, emoji: "🕰️", name: "Lv.19 시간의 나무" },
+                { limit: 1000000000000, emoji: "♾️", name: "Lv.20 무한의 차원" },
+
+                // 최후반부: 신화 & 초월 (신규 10단계)
+                { limit: 5000000000000, emoji: "🔮", name: "Lv.21 멀티버스 묘목" },
+                { limit: 20000000000000, emoji: "🧬", name: "Lv.22 창조의 DNA" },
+                { limit: 100000000000000, emoji: "🎇", name: "Lv.23 빅뱅의 순간" },
+                { limit: 500000000000000, emoji: "🕉️", name: "Lv.24 절대자의 정원" },
+                { limit: 2000000000000000, emoji: "🐉", name: "Lv.25 신화의 세계수" },
+                { limit: 10000000000000000, emoji: "💠", name: "Lv.26 4차원의 꽃" },
+                { limit: 50000000000000000, emoji: "🌀", name: "Lv.27 차원 융합기" },
+                { limit: 200000000000000000, emoji: "✨", name: "Lv.28 빛의 기원" },
+                { limit: 1000000000000000000, emoji: "👑", name: "Lv.29 우주의 지배자" },
+                { limit: 9999999999999999999, emoji: "🏁", name: "Lv.MAX 새로운 시작" }
+            ],
+
+            init() {
+                this.cacheDOM();
+                this.loadGame();
+                this.bindEvents();
+                this.startGameLoop();
+                this.render();
+            },
+
+            cacheDOM() {
+                this.dom = {
+                    score: document.getElementById('score'),
+                    cps: document.getElementById('cps'),
+                    treeEmoji: document.getElementById('tree-emoji'),
+                    levelBadge: document.getElementById('level-badge'),
+                    progressBar: document.getElementById('progress-bar'),
+                    progressText: document.getElementById('progress-text'),
+                    clickArea: document.getElementById('click-area'),
+                    
+                    btnClick: document.getElementById('btn-upgrade-click'),
+                    btnAuto: document.getElementById('btn-upgrade-auto'),
+                    btnCrit: document.getElementById('btn-upgrade-crit'),
+                    btnMultClick: document.getElementById('btn-upgrade-mult-click'),
+                    btnMultAuto: document.getElementById('btn-upgrade-mult-auto'),
+
+                    modal: document.getElementById('offline-modal'),
+                    offlineEarnText: document.getElementById('offline-earn')
+                };
+            },
+
+            bindEvents() {
+                this.dom.clickArea.addEventListener('click', (e) => this.clickTree(e));
+                document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+                
+                document.addEventListener("visibilitychange", () => {
+                    if (document.visibilityState === 'hidden') {
+                        this.saveGame();
+                    }
+                });
+            },
+
+            // 실제 수익 계산 (기본값 * 승수)
+            getRealClickPower() {
+                return this.state.clickPower * this.state.clickMultiplier;
+            },
+
+            getRealAutoIncome() {
+                return this.state.autoIncome * this.state.autoMultiplier;
+            },
+
+            clickTree(e) {
+                const critChance = this.state.critLevel * 0.05; 
+                const isCrit = Math.random() < critChance;
+                
+                // 계산식: (기본 * 승수) * 크리배수
+                const base = this.getRealClickPower();
+                const gain = isCrit ? base * 3 : base;
+                
+                this.state.coins += gain;
+                
+                if (navigator.vibrate) navigator.vibrate(isCrit ? 50 : 5);
+                
+                // 표시 텍스트 포맷 (소수점 제거)
+                const displayGain = Math.floor(gain).toLocaleString();
+                this.createFloatingText(e.clientX, e.clientY, `+${displayGain}`, isCrit);
+                
+                const tree = this.dom.treeEmoji;
+                tree.style.transform = 'scale(0.9)';
+                setTimeout(() => tree.style.transform = 'scale(1)', 100);
+
+                this.checkEvolution();
+                this.render();
+            },
+
+            createFloatingText(x, y, text, isCrit = false) {
+                const el = document.createElement('div');
+                el.className = isCrit ? 'click-effect critical' : 'click-effect';
+                el.innerText = isCrit ? `대박! ${text}` : text;
+                
+                const posX = x || window.innerWidth / 2;
+                const posY = y || window.innerHeight / 2;
+                el.style.left = `${posX}px`;
+                el.style.top = `${posY - 30}px`;
+                
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 800);
+            },
+
+            buyUpgrade(type) {
+                if (type === 'click' && this.state.coins >= this.state.clickCost) {
+                    this.state.coins -= this.state.clickCost;
+                    this.state.clickPower += 1;
+                    this.state.clickCost = Math.floor(this.state.clickCost * 1.5);
+                    
+                } else if (type === 'auto' && this.state.coins >= this.state.autoCost) {
+                    this.state.coins -= this.state.autoCost;
+                    this.state.autoIncome += 1;
+                    this.state.autoCost = Math.floor(this.state.autoCost * 1.5);
+                    
+                } else if (type === 'crit' && this.state.coins >= this.state.critCost) {
+                    this.state.coins -= this.state.critCost;
+                    this.state.critLevel += 1;
+                    this.state.critCost = Math.floor(this.state.critCost * 2.0);
+
+                } else if (type === 'mult_click' && this.state.coins >= this.state.multClickCost) {
+                    this.state.coins -= this.state.multClickCost;
+                    this.state.clickMultiplier *= 1.1; // 10% 증가
+                    this.state.multClickCost = Math.floor(this.state.multClickCost * 3.0); // 가격 급상승
+
+                } else if (type === 'mult_auto' && this.state.coins >= this.state.multAutoCost) {
+                    this.state.coins -= this.state.multAutoCost;
+                    this.state.autoMultiplier *= 1.1; // 10% 증가
+                    this.state.multAutoCost = Math.floor(this.state.multAutoCost * 3.0); // 가격 급상승
+                }
+                this.render();
+                this.saveGame();
+            },
+
+            checkEvolution() {
+                let currentStageIndex = 0;
+                for (let i = 0; i < this.treeStages.length; i++) {
+                    if (this.state.coins >= this.treeStages[i].limit) {
+                        currentStageIndex = i;
+                    }
+                }
+
+                if (currentStageIndex > this.state.treeLevel) {
+                    this.state.treeLevel = currentStageIndex;
+                    this.dom.treeEmoji.classList.remove('evolution-anim');
+                    void this.dom.treeEmoji.offsetWidth;
+                    this.dom.treeEmoji.classList.add('evolution-anim');
+                    
+                    this.createFloatingText(window.innerWidth/2, window.innerHeight/2 - 100, "🎉 진화 성공!");
+                }
+            },
+
+            startGameLoop() {
+                setInterval(() => {
+                    const realAuto = this.getRealAutoIncome();
+                    if (realAuto > 0) {
+                        this.state.coins += realAuto;
+                        this.checkEvolution();
+                        this.render();
+                    }
+                }, 1000);
+
+                setInterval(() => {
+                    this.saveGame();
+                }, 5000);
+            },
+
+            saveGame() {
+                this.state.lastSaveTime = Date.now();
+                const data = JSON.stringify(this.state);
+                const encoded = btoa(encodeURIComponent(data)); 
+                localStorage.setItem('moneyTreeSaveV3', encoded); // 버전업 V3
+            },
+
+            loadGame() {
+                // V3 로드 시도
+                let save = localStorage.getItem('moneyTreeSaveV3');
+                
+                // 없다면 V2 로드 시도 (마이그레이션)
+                if (!save) save = localStorage.getItem('moneyTreeSaveV2');
+
+                if (save) {
+                    try {
+                        const decoded = decodeURIComponent(atob(save));
+                        const parsed = JSON.parse(decoded);
+                        
+                        // 신규 데이터 필드 초기화 (구버전 세이브 호환용)
+                        if (!parsed.clickMultiplier) parsed.clickMultiplier = 1;
+                        if (!parsed.autoMultiplier) parsed.autoMultiplier = 1;
+                        if (!parsed.multClickCost) parsed.multClickCost = 1000;
+                        if (!parsed.multAutoCost) parsed.multAutoCost = 2500;
+
+                        // 오프라인 계산
+                        const now = Date.now();
+                        const lastTime = parsed.lastSaveTime || now;
+                        const diffSeconds = Math.floor((now - lastTime) / 1000);
+                        const validSeconds = Math.min(diffSeconds, 86400);
+                        
+                        // 저장된 승수 적용하여 계산
+                        const savedAutoIncome = (parsed.autoIncome || 0) * (parsed.autoMultiplier || 1);
+                        
+                        if (validSeconds > 10 && savedAutoIncome > 0) {
+                            const earned = validSeconds * savedAutoIncome;
+                            parsed.coins += earned;
+                            
+                            this.dom.offlineEarnText.innerText = Math.floor(earned).toLocaleString();
+                            this.dom.modal.classList.add('active');
+                        }
+
+                        this.state = { ...this.state, ...parsed };
+                    } catch (e) {
+                        console.error("Save load failed", e);
+                    }
+                }
+            },
+
+            closeModal() {
+                this.dom.modal.classList.remove('active');
+            },
+            // 큰 숫자 포맷팅 (예: 1.5만, 2.3억, 4.5조, 1.2경)
+            formatNumber(num) {
+                if (num < 10000) return Math.floor(num).toLocaleString();
+                if (num < 100000000) return (num / 10000).toFixed(1) + '만';
+                if (num < 1000000000000) return (num / 100000000).toFixed(2) + '억';
+                if (num < 10000000000000000) return (num / 1000000000000).toFixed(2) + '조';
+                return (num / 10000000000000000).toFixed(2) + '경'; // 경 단위 추가
+            },
+
+            render() {
+                this.dom.score.innerText = this.formatNumber(this.state.coins);
+                
+                const realAuto = this.getRealAutoIncome();
+                this.dom.cps.innerText = realAuto > 0 ? this.formatNumber(realAuto) : "0";
+                
+                const currentStage = this.treeStages[this.state.treeLevel];
+                const nextStage = this.treeStages[this.state.treeLevel + 1];
+                
+                this.dom.treeEmoji.innerText = currentStage.emoji;
+                this.dom.levelBadge.innerText = currentStage.name;
+
+                if (nextStage) {
+                    const prevLimit = currentStage.limit;
+                    const target = nextStage.limit;
+                    const current = this.state.coins;
+                    
+                    let percentage = 0;
+                    if (current >= target) {
+                        percentage = 100;
+                    } else {
+                        const range = target - prevLimit;
+                        const progress = current - prevLimit;
+                        const safeRange = range <= 0 ? target : range; 
+                        percentage = Math.min(100, Math.max(0, (progress / safeRange) * 100));
+                    }
+                    
+                    this.dom.progressBar.style.width = `${percentage}%`;
+                    this.dom.progressText.innerText = `다음 진화까지: ${this.formatNumber(target - current)}원`;
+                } else {
+                    this.dom.progressBar.style.width = '100%';
+                    this.dom.progressText.innerText = '전설의 경지에 도달했습니다!';
+                }
+
+                // 버튼 업데이트 (비용 포맷팅 적용)
+                this.updateButton(this.dom.btnClick, this.state.clickCost, 
+                    `+1 강화 (${this.formatNumber(this.state.clickCost)}원)`);
+                    
+                this.updateButton(this.dom.btnAuto, this.state.autoCost, 
+                    `+1개/초 (${this.formatNumber(this.state.autoCost)}원)`);
+                
+                const nextCritChance = (this.state.critLevel + 1) * 5;
+                this.updateButton(this.dom.btnCrit, this.state.critCost, 
+                    `확률 ${nextCritChance}%로 UP (${this.formatNumber(this.state.critCost)}원)`);
+
+                this.updateButton(this.dom.btnMultClick, this.state.multClickCost, 
+                    `효율 +10% (${this.formatNumber(this.state.multClickCost)}원)`);
+
+                this.updateButton(this.dom.btnMultAuto, this.state.multAutoCost, 
+                    `효율 +10% (${this.formatNumber(this.state.multAutoCost)}원)`);
+            },
+
+            updateButton(btn, cost, text) {
+                btn.innerText = text;
+                if (this.state.coins >= cost) {
+                    btn.disabled = false;
+                    btn.style.opacity = 1;
+                } else {
+                    btn.disabled = true;
+                    btn.style.opacity = 0.5;
+                }
+            }
+        };
+
+        window.onload = () => game.init();
+    </script>
+</body>
+</html>
